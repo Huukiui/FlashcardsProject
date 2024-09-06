@@ -26,5 +26,21 @@ namespace FlashcardsProject.Controllers
                 connection.Close();
             }
         }
+
+        public static List<StudySession> GetAll()
+        {
+            var sessionsList = new List<StudySession>() { };
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                var sql = "SELECT * FROM StudySessions";
+
+                sessionsList = connection.Query<StudySession>(sql).ToList();
+            }
+
+            return sessionsList;
+        }
     }
 }

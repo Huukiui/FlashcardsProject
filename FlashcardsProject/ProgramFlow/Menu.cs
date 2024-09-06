@@ -241,12 +241,106 @@ namespace FlashcardsProject.ProgramFlow
 
         private void StartStudying()
         {
+            bool returnToMainMenu = false;
 
+            while (!returnToMainMenu)
+            {
+                string? choice;
+
+                Console.Clear();
+                var stacks = StacksController.GetAll();
+
+                if (stacks.Count == 0)
+                {
+                    Console.WriteLine("No stacks available in database! Press any key to return to main menu...");
+                    Console.ReadKey();
+                    returnToMainMenu = true;
+                    continue;
+                }
+
+                PrintStacks(stacks);
+
+                Console.WriteLine();
+                Console.WriteLine("Please enter name of stack of flashcards to study with or 0 to return to main menu:");
+                choice = Console.ReadLine();
+
+                if (choice == "0")
+                {
+                    returnToMainMenu = true;
+                    continue;
+                }
+                else if (stacks.Where(s => s.Name == choice).Count() == 0)
+                {
+                    Console.WriteLine("No stack with such name. Press any key to try again...");
+                    Console.ReadKey();
+                    continue;
+                }
+
+                int stackId = stacks.FirstOrDefault(s => s.Name == choice).StackId;
+
+                Console.Clear();
+                var cardsList = FlashCardsController.GetByStackId(stackId);
+
+                int score = 0;
+                var random =  new Random();
+                var selectedCards = cardsList.OrderBy(x => random.Next()).Take(5).ToList();
+
+                foreach (var card in selectedCards)
+                {
+                    Console.WriteLine($"Translate \"{card.Front}\" to English:");
+                    string? userAnswer = Console.ReadLine();
+
+                    if (string.Equals(userAnswer, card.Back, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Console.WriteLine("Correct!");
+                        score++;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Incorrect! The correct translation is: {card.Back}");
+                    }
+                }
+
+                StudySessionsController.Add(new StudySession { Date = DateTime.Now, Score = score, StackId = stackId });
+
+                Console.WriteLine($"\nYour score: {score}/{selectedCards.Count}. Press any key to continue..");
+                Console.ReadKey();
+            }
         }
 
         private void StudiesSubMenu()
         {
+            Console.Clear();
 
+            var studySessions = StudySessionsController.GetAll();
+            var stacksList = StacksController.GetAll();
+
+            var sessionsWithStacks = from session in studySessions
+                                     join stack in stacksList on session.StackId equals stack.StackId
+                                     select new
+                                     {
+                                         session.SessionId,
+                                         session.Date,
+                                         session.Score,
+                                         StackName = stack.Name
+                                     };
+
+            var groupedSessions = sessionsWithStacks.GroupBy(s => s.StackName);
+
+            foreach (var group in groupedSessions)
+            {
+                Console.WriteLine($"\nStack: {group.Key}");
+                Console.WriteLine("Session ID |      Date      | Score");
+                Console.WriteLine("--------------------------------------");
+
+                foreach (var session in group)
+                {
+                    Console.WriteLine($"{session.SessionId,10} | {session.Date.ToShortDateString(),14} | {session.Score,5}");
+                }
+            }
+
+            Console.WriteLine("Press any key to return to main menu..");
+            Console.ReadKey();
         }
 
         private void PrintStacks(List<Stack> stacks)
