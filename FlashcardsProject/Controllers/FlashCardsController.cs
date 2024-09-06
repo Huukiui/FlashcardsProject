@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Dapper;
+using System.Globalization;
 
 namespace FlashcardsProject.Controllers
 {
@@ -86,6 +87,22 @@ namespace FlashcardsProject.Controllers
             }
 
             return cardsList.Count > 0;
+        }
+
+        public static List<Flashcard> GetByStackId(int stackId)
+        {
+            var cardsList = new List<Flashcard>() { };
+
+            using (var connection = new SqlConnection(connectionString))
+            {
+                connection.Open();
+
+                var sql = "SELECT * FROM Flashcards WHERE StackId = @StackId";
+
+                cardsList = connection.Query<Flashcard>(sql, new {StackId = stackId}).ToList();
+            }
+
+            return cardsList;
         }
     }
 }
